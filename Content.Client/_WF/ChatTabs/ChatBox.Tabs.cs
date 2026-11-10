@@ -1,4 +1,6 @@
+using System.IO;
 using Content.Client._WF.ChatTabs;
+using Content.Client.UserInterface.Systems.Chat;
 using Content.Shared.Chat;
 using Robust.Client.UserInterface;
 using Robust.Client.UserInterface.Controls;
@@ -72,6 +74,7 @@ public partial class ChatBox
 
         _wfTabBar = new ChatTabBar();
         _wfTabBar.PopoutButton.OnPressed += _ => _wfPopout.Toggle(this);
+        _wfTabBar.SaveButton.OnPressed += _ => SaveChatLog();
         ChatInput.Parent!.AddChild(_wfTabBar);
         _wfTabBar.SetPositionFirst();
         Contents.Margin = new Thickness(8, 2, 8, 4);
@@ -268,5 +271,32 @@ public partial class ChatBox
 
         ChatInput.Parent!.AddChild(_wfPlaceholder);
         _wfPlaceholder.SetPositionFirst();
+    }
+
+    private async void SaveChatLog()
+    {
+        var fileDialog = IoCManager.Resolve<IFileDialogManager>();
+        var filters = new FileDialogFilters(new FileDialogFilters.Group("txt"));
+        var file = await fileDialog.SaveFile(filters);
+        if (file == null)
+            return;
+
+        var controller = UserInterfaceManager.GetUIController<ChatUIController>();
+        var tab = _wfTabs.SelectedTab;
+        var channels = tab.Channels;
+
+        await using var writer = new StreamWriter(file.Value.fileStream);
+        await writer.WriteLineAsync($"Chat log – {tab.Name}");
+        await writer.WriteLineAsync();
+
+        foreach (var (tick, msg) in controller.History)
+        {
+            if ((msg.Channel & channels) == 0)
+                continue;
+
+            var channelName = Loc.GetString($"chat-channel-{msg.Channel.ToString().ToLowerInvariant()}");
+            var sender = msg.SenderKey.HasValue ? $"#{msg.SenderKey.Value}" : "unknown";
+            await writer.WriteLineAsync($"[{tick}] [{channelName}] {sender}: {msg.Message}");
+        }
     }
 }

@@ -28,6 +28,11 @@ public sealed class ChatTabBar : BoxContainer
     /// </summary>
     public readonly WolfgatePopoutButton PopoutButton;
 
+    /// <summary>
+    /// Saves the chat log to a text file.
+    /// </summary>
+    public readonly Button SaveButton;
+
     public ChatTabBar()
     {
         _tabs = UserInterfaceManager.GetUIController<ChatTabsUIController>();
@@ -64,6 +69,15 @@ public sealed class ChatTabBar : BoxContainer
 
         PopoutButton = new WolfgatePopoutButton();
         AddChild(PopoutButton);
+
+        SaveButton = new Button
+        {
+            Text = "⬇",
+            ToolTip = Loc.GetString("wf-chat-tabs-save"),
+            StyleClasses = { StyleClassChatTab },
+            VerticalAlignment = VAlignment.Center,
+        };
+        AddChild(SaveButton);
     }
 
     protected override void EnteredTree()
